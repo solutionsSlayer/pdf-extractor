@@ -38,7 +38,7 @@ data_warehouse/
 
 ```bash
 # Installer les dépendances
-pip install pymupdf4llm
+pip install -r requirements.txt
 
 # Le module est prêt à utiliser
 python cli.py --help

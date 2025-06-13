@@ -1,1 +1,8 @@
 PyMuPDF==1.23.14 
+pymupdf4llm
+langchain==0.3.12
+langchain-core==0.3.25
+langchain-ollama==0.2.0
+pydantic==2.10.4
+python-dotenv==1.0.1
+requests==2.31.0

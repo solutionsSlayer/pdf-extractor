@@ -1,0 +1,9 @@
+{
+  "extraction_timestamp": "2025-06-13T16:08:13.786206",
+  "original_file": "C:\\Users\\DorianDOUSSAIN\\Documents\\projects\\tools\\data_warehouse\\FT\\charles_alice\\3288310840869.pdf",
+  "file_size_bytes": 166363,
+  "total_chunks": 2,
+  "chunks_with_tables": 2,
+  "chunks_with_images": 2,
+  "total_text_length": 6226
+}

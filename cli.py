@@ -167,13 +167,10 @@ Examples:
   # Extract all files from unilever folder
   python cli.py --folder FT/unilever
   
-  # Extract all files from charles_alice folder
-  python cli.py --folder FT/charles_alice
-  
   # Extract with custom output directory
   python cli.py --folder FT/unilever --output ./extracted_data
   
-  # Extract without images (faster)
+  # Extract without images (faster processing)
   python cli.py --folder FT/charles_alice --no-images
         """
     )
@@ -197,6 +194,7 @@ Examples:
         type=str,
         help='Output directory for extracted files (default: current directory)'
     )
+    
     parser.add_argument(
         '--no-images',
         action='store_true',

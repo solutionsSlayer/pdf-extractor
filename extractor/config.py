@@ -15,7 +15,7 @@ class ExtractionConfig:
     page_chunks: bool = True
     extract_words: bool = True
     
-    # Table extraction
+    # Table extraction - optimized for markdown
     table_strategy: str = "lines_strict"
     
     # Image extraction
@@ -30,7 +30,8 @@ class ExtractionConfig:
     
     # Output settings
     output_directory: Optional[str] = "./extracted_data"
-    save_raw_text: bool = True
+    save_as_markdown: bool = True  # NEW: Save as .md files
+    save_raw_text: bool = False    # CHANGED: Default to False since we prefer markdown
     
     def to_pymupdf_kwargs(self, pdf_name: Optional[str] = None) -> dict:
         """
@@ -40,7 +41,7 @@ class ExtractionConfig:
             pdf_name: Name of the PDF file (without extension) to create organized image folders
             
         Returns:
-            Dictionary of pymupdf4llm parameters
+            Dictionary of pymupdf4llm parameters optimized for markdown output
         """
         # Organize images by PDF file name if provided
         image_path = self.image_path

@@ -53,7 +53,12 @@ class FileManager:
         
         saved_files = {}
         
-        # Save raw extracted data as text
+        # Save as Markdown file (default and recommended)
+        if self.config.save_as_markdown:
+            markdown_file_path = self._save_as_markdown(extracted_data, base_name, pdf_folder)
+            saved_files['markdown'] = markdown_file_path
+        
+        # Save raw extracted data as text (optional, for backup)
         if self.config.save_raw_text:
             text_file_path = self._save_as_text(extracted_data, base_name, pdf_folder)
             saved_files['text'] = text_file_path
@@ -75,6 +80,37 @@ class FileManager:
         
         output_dir.mkdir(parents=True, exist_ok=True)
         return output_dir
+    
+    def _save_as_markdown(
+        self, 
+        extracted_data: Union[List[Dict[str, Any]], str], 
+        base_name: str, 
+        output_dir: Path
+    ) -> Path:
+        """Save extracted data as Markdown file."""
+        markdown_file = output_dir / f"extracted_{base_name}.md"
+        
+        with open(markdown_file, 'w', encoding='utf-8') as f:
+            if isinstance(extracted_data, list):
+                # Add title and metadata
+                f.write(f"# {base_name}\n\n")
+                f.write(f"*Extracted on {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}*\n\n")
+                f.write("---\n\n")
+                
+                for i, chunk in enumerate(extracted_data):
+                    f.write(f"## Page {i+1}\n\n")
+                    if isinstance(chunk, dict):
+                        text_content = chunk.get("text", str(chunk))
+                        f.write(text_content)
+                    else:
+                        f.write(str(chunk))
+                    f.write("\n\n")
+            else:
+                # Direct markdown content from pymupdf4llm
+                f.write(str(extracted_data))
+        
+        print(f"📄 Markdown saved: {markdown_file}")
+        return markdown_file
     
     def _save_as_text(
         self, 
