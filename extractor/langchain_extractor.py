@@ -55,6 +55,8 @@ class LangChainExtractor:
   "product_name": "string ou null",
   "legal_denomination": "string ou null", 
   "ean_code": "string ou null",
+  "ean_carton": "string ou null",
+  "ean_palette": "string ou null",
   "ingredients": ["liste de strings"] ou null,
   "additives": ["liste de strings"] ou null,
   "allergens": [{{"name": "string", "status": "Oui|Traces|Non"}}] ou null,
@@ -73,6 +75,22 @@ Ignore complètement ceux avec status "Non" - ne les inclus pas du tout dans la 
         return f"""Tu es un expert en extraction de données de fiches produits alimentaires.
 
 Ton rôle est d'analyser le contenu de fiches produits et d'extraire toutes les informations pertinentes dans un format JSON structuré.
+
+INSTRUCTIONS SPÉCIFIQUES POUR LES CODES EAN :
+
+1. CODES EAN À EXTRAIRE :
+   - ean_code : Code EAN principal du produit (EAN 13 GENCOD Produit) - généralement 13 chiffres
+   - ean_carton : Code EAN carton/couche (DUN 14 Unité Logistique Carton) - généralement commence par 1
+   - ean_palette : Code EAN palette (DUN 14 Unité Logistique Palette) - généralement commence par 2
+
+2. OÙ CHERCHER LES CODES EAN :
+   - Sections "Etiquetage", "Marquage", "Colisage", "Palettisation"
+   - Tableaux de codes-barres ou identifiants
+   - Lignes mentionnant "EAN", "GENCOD", "DUN 14"
+   - Exemples de formats :
+     * EAN 13 GENCOD Produit : 3288310840869
+     * DUN 14 Unité Logistique Carton : 13288310840866
+     * DUN 14 Unité Logistique Palette : 23288310840863
 
 INSTRUCTIONS CRITIQUES POUR LES ALLERGÈNES :
 
@@ -113,6 +131,7 @@ AUTRES INSTRUCTIONS :
 
 TYPES DE DONNÉES À EXTRAIRE :
 - Informations générales (nom, dénomination légale, EAN)
+- Codes EAN pour tous les niveaux de conditionnement
 - Ingrédients et additifs
 - Allergènes avec leur statut (SEULEMENT ceux présents ou en traces)
 - Informations nutritionnelles complètes
@@ -270,7 +289,7 @@ Réponds UNIQUEMENT avec le JSON structuré, sans texte supplémentaire."""
         
         # Comptage des champs principaux
         main_fields = [
-            'product_name', 'legal_denomination', 'ean_code',
+            'product_name', 'legal_denomination', 'ean_code', 'ean_carton', 'ean_palette',
             'ingredients', 'allergens', 'nutritional_values',
         ]
         

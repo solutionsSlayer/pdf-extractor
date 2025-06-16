@@ -38,6 +38,8 @@ class ProductSheet(BaseModel):
     product_name: Optional[str] = Field(None, description="Nom du produit")
     legal_denomination: Optional[str] = Field(None, description="Dénomination légale")
     ean_code: Optional[str] = Field(None, description="Code EAN principal du produit")
+    ean_carton: Optional[str] = Field(None, description="Code EAN carton/couche (DUN 14)")
+    ean_palette: Optional[str] = Field(None, description="Code EAN palette (DUN 14)")
     
     # Ingrédients et composition
     ingredients: Optional[List[str]] = Field(None, description="Liste des ingrédients")
