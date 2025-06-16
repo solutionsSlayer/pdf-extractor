@@ -9,7 +9,7 @@ from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import PydanticOutputParser
 from langchain_core.exceptions import OutputParserException
 
-from .schemas import ProductSheet, ExtractionResult, Allergen, NutritionalValue, LogisticsInfo
+from .schemas import ProductSheet, ExtractionResult, Allergen, NutritionalValue, ManufacturerContact
 
 
 class LangChainExtractor:
@@ -58,25 +58,10 @@ class LangChainExtractor:
   "ingredients": ["liste de strings"] ou null,
   "additives": ["liste de strings"] ou null,
   "allergens": [{{"name": "string", "status": "Oui|Traces|Non"}}] ou null,
-  "product_benefits": ["liste de strings"] ou null,
-  "preparation_instructions": "string ou null",
-  "dosage_instructions": "string ou null",
   "shelf_life": "string ou null",
   "storage_conditions": "string ou null",
   "packaging_country": "string ou null",
-  "nutritional_values": [{{"name": "string", "per_100g": "string", "per_100ml_sold": "string", "per_100ml_prepared": "string", "per_portion": "string", "percentage_reference": "string"}}] ou null,
-  "vegetarian_suitable": true/false/null,
-  "vegan_suitable": true/false/null,
-  "organic_product": true/false/null,
-  "ionized_product": true/false/null,
-  "gmo_free": true/false/null,
-  "alcohol_free": true/false/null,
-  "kosher": true/false/null,
-  "halal": true/false/null,
-  "logistics_info": [{{"element_type": "string", "ean": "string", "description": "string", "net_weight": "string", "gross_weight": "string", "dimensions": {{"longueur": "string", "largeur": "string", "hauteur": "string"}}, "volume": "string"}}] ou null,
-  "customs_code": "string ou null",
-  "quality_standards": ["liste de strings"] ou null,
-  "requires_health_approval": true/false/null,
+  "nutritional_values": [{{"name": "string", "per_100g": "string", "percentage_reference": "string"}}] ou null,
   "manufacturer_contact": {{"nom": "string", "adresse": "string", "telephone": "string", "email": "string", "website": "string"}} ou null,
   "extraction_date": "string ISO",
   "source_file": "string"
@@ -130,11 +115,7 @@ TYPES DE DONNÉES À EXTRAIRE :
 - Informations générales (nom, dénomination légale, EAN)
 - Ingrédients et additifs
 - Allergènes avec leur statut (SEULEMENT ceux présents ou en traces)
-- Avantages produit
-- Instructions de préparation et dosage
 - Informations nutritionnelles complètes
-- Caractéristiques diététiques (végétarien, bio, etc.)
-- Informations logistiques (poids, dimensions, EAN)
 - Certifications qualité
 - Informations de contact
 
@@ -178,27 +159,11 @@ Réponds UNIQUEMENT avec le JSON structuré, sans texte supplémentaire."""
         result = raw_result.copy()
         
         # Correction des champs qui doivent être des listes
-        list_fields = ['quality_standards', 'ingredients', 'additives', 'product_benefits']
+        list_fields = ['ingredients', 'additives']
         for field in list_fields:
             if field in result and isinstance(result[field], str):
                 # Convertit la chaîne en liste avec un seul élément
                 result[field] = [result[field]]
-        
-        # Correction des noms de champs
-        field_mappings = {
-            'vegetarian': 'vegetarian_suitable',
-            'vegan': 'vegan_suitable', 
-            'biological': 'organic_product',
-            'ionized': 'ionized_product',
-            'no_gmo': 'gmo_free',
-            'no_alcohol': 'alcohol_free',
-            'kasher': 'kosher',
-            'logistics': 'logistics_info'
-        }
-        
-        for old_field, new_field in field_mappings.items():
-            if old_field in result:
-                result[new_field] = result.pop(old_field)
         
         # Filtrage des allergènes - ne garde que ceux avec statut "Oui" ou "Traces"
         if 'allergens' in result and result['allergens']:
@@ -207,93 +172,6 @@ Réponds UNIQUEMENT avec le JSON structuré, sans texte supplémentaire."""
                 if isinstance(allergen, dict) and allergen.get('status') in ['Oui', 'Traces']:
                     filtered_allergens.append(allergen)
             result['allergens'] = filtered_allergens if filtered_allergens else None
-        
-        # Correction des champs dans logistics_info
-        if 'logistics_info' in result and result['logistics_info']:
-            corrected_logistics = []
-            for item in result['logistics_info']:
-                if isinstance(item, dict):
-                    # Correction des noms de champs dans les éléments logistiques
-                    corrected_item = {}
-                    logistics_mappings = {
-                        'element': 'element_type',
-                        'name': 'description',
-                        'weight_net': 'net_weight',
-                        'weight_net_kg': 'net_weight',
-                        'weight_brut': 'gross_weight',
-                        'weight_brut_kg': 'gross_weight',
-                        'length': 'length_mm',
-                        'length_mm': 'length_mm',
-                        'depth': 'depth_mm',
-                        'depth_mm': 'depth_mm', 
-                        'width': 'width_mm',
-                        'width_mm': 'width_mm',
-                        'height': 'height_mm',
-                        'height_mm': 'height_mm',
-                        'volume_dm3': 'volume',
-                        'volume': 'volume'
-                    }
-                    
-                    # Conversion des clés en minuscules pour la comparaison
-                    item_lower = {k.lower(): v for k, v in item.items()}
-                    
-                    # Mapping des champs avec gestion des variations de casse
-                    for old_key, new_key in logistics_mappings.items():
-                        old_key_lower = old_key.lower()
-                        if old_key_lower in item_lower:
-                            corrected_item[new_key] = item_lower[old_key_lower]
-                        elif old_key_lower.replace('_', '') in item_lower:  # Sans underscores
-                            corrected_item[new_key] = item_lower[old_key_lower.replace('_', '')]
-                        elif old_key_lower.replace('_', ' ') in item_lower:  # Avec espaces
-                            corrected_item[new_key] = item_lower[old_key_lower.replace('_', ' ')]
-                    
-                    # Gestion spéciale pour EAN (souvent en majuscules)
-                    if 'ean' in item_lower:
-                        corrected_item['ean'] = item_lower['ean']
-                    
-                    # S'assurer que element_type est présent (requis par le schéma)
-                    if 'element_type' not in corrected_item:
-                        # Essayer de trouver une valeur par défaut
-                        if 'element' in item_lower:
-                            corrected_item['element_type'] = item_lower['element']
-                        elif any(k in item_lower for k in ['unite', 'unit', 'carton', 'palette', 'couche']):
-                            # Déduire le type d'élément à partir des clés présentes
-                            for key in item_lower.keys():
-                                if 'unite' in key.lower() or 'unit' in key.lower():
-                                    corrected_item['element_type'] = 'UNITE CONSOMMATEUR'
-                                    break
-                                elif 'carton' in key.lower():
-                                    corrected_item['element_type'] = 'CARTON'
-                                    break
-                                elif 'palette' in key.lower():
-                                    corrected_item['element_type'] = 'PALETTE'
-                                    break
-                                elif 'couche' in key.lower():
-                                    corrected_item['element_type'] = 'COUCHE'
-                                    break
-                        else:
-                            # Valeur par défaut si rien n'est trouvé
-                            corrected_item['element_type'] = 'INCONNU'
-                    
-                    # Construction des dimensions si nécessaire
-                    dimensions = {}
-                    dimension_mappings = {
-                        'length_mm': 'longueur',
-                        'depth_mm': 'profondeur', 
-                        'width_mm': 'largeur',
-                        'height_mm': 'hauteur'
-                    }
-                    
-                    for field, dim_name in dimension_mappings.items():
-                        if field in corrected_item and corrected_item[field]:
-                            dimensions[dim_name] = corrected_item.pop(field)
-                    
-                    if dimensions:
-                        corrected_item['dimensions'] = dimensions
-                    
-                    corrected_logistics.append(corrected_item)
-            
-            result['logistics_info'] = corrected_logistics if corrected_logistics else None
         
         return result
 
@@ -394,7 +272,6 @@ Réponds UNIQUEMENT avec le JSON structuré, sans texte supplémentaire."""
         main_fields = [
             'product_name', 'legal_denomination', 'ean_code',
             'ingredients', 'allergens', 'nutritional_values',
-            'preparation_instructions', 'storage_conditions'
         ]
         
         for field in main_fields:
@@ -413,9 +290,6 @@ Réponds UNIQUEMENT avec le JSON structuré, sans texte supplémentaire."""
             filled_fields += 0.5
         
         if product_sheet.nutritional_values and len(product_sheet.nutritional_values) > 0:
-            filled_fields += 0.5
-        
-        if product_sheet.logistics_info and len(product_sheet.logistics_info) > 0:
             filled_fields += 0.5
         
         return min(filled_fields / total_fields, 1.0) if total_fields > 0 else 0.0

@@ -11,7 +11,7 @@ def main():
     
     # Test d'extraction
     extractor = LangChainExtractor()
-    result = extractor.extract_from_file('extracted_data/3288310840869/extracted_3288310840869.md')
+    result = extractor.extract_from_file('extracted_data/3011360006707/extracted_3011360006707.md')
     
     print(f'Succès: {result.success}')
     

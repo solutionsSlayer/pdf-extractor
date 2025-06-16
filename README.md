@@ -1,52 +1,59 @@
-# PDF Technical Sheet Extractor 📄
+# Data Warehouse - Extracteur de Fiches Techniques 📄
 
-**Module d'extraction modulaire et propre pour fiches techniques PDF**
+**Système complet d'extraction et de structuration de données pour fiches techniques PDF**
 
-## 🎯 **Vue d'ensemble**
+## 🎯 Vue d'ensemble
 
-Système d'extraction modulaire basé sur **PyMuPDF4LLM** pour extraire le contenu des fiches techniques PDF. Architecture propre suivant les principes SOLID avec CLI intégré.
+Système modulaire d'extraction en deux étapes :
+1. **Extraction PDF** : Conversion des PDFs en texte structuré avec PyMuPDF4LLM
+2. **Structuration IA** : Transformation du texte en données JSON structurées avec LangChain + Llama 3.1
 
-## 🏗️ **Architecture Modulaire**
+## 🏗️ Architecture du Projet
 
-### **Structure du projet**
 ```
 data_warehouse/
-├── extractor/                    # Module principal
-│   ├── __init__.py              # Point d'entrée du module
-│   ├── config.py                # Configuration centralisée
-│   ├── pdf_extractor.py         # Extraction PDF pure
-│   ├── file_manager.py          # Gestion des fichiers
-│   └── technical_sheet_extractor.py  # Orchestrateur principal
-├── cli.py                       # Interface ligne de commande
-├── extract.bat                  # Script Windows
-├── extract.sh                   # Script Unix/Linux
-├── extracted_data/              # Résultats d'extraction
-├── extracted_images/            # Images extraites
-└── FT/                         # Fiches techniques PDF
-    ├── unilever/
-    └── charles_alice/
+├── extractor/                          # Module principal
+│   ├── __init__.py                     # Point d'entrée du module
+│   ├── config.py                       # Configuration centralisée
+│   ├── pdf_extractor.py                # Extraction PDF pure
+│   ├── file_manager.py                 # Gestion des fichiers
+│   ├── technical_sheet_extractor.py    # Orchestrateur PDF
+│   ├── schemas.py                      # Schémas Pydantic pour données structurées
+│   └── langchain_extractor.py          # Extracteur IA avec LangChain
+├── cli.py                              # Interface ligne de commande
+├── main_langchain.py                   # Script principal intégré
+├── config.py                           # Configuration globale
+├── extract.bat / extract.sh            # Scripts de raccourci
+├── extracted_data/                     # Données extraites (texte)
+├── extracted_images/                   # Images extraites
+├── FT/                                 # Fiches techniques PDF sources
+│   ├── unilever/
+│   └── charles_alice/
+└── requirements.txt                    # Dépendances Python
 ```
 
-### **Principes appliqués**
-✅ **Single Responsibility** : Chaque classe a une responsabilité unique  
-✅ **Open/Closed** : Extensible via configuration et composition  
-✅ **Dependency Inversion** : Utilise la composition plutôt que l'héritage  
-✅ **Clean Code** : Noms explicites, méthodes courtes, documentation claire  
-✅ **Séparation des préoccupations** : Extraction, sauvegarde et configuration séparées  
+## 🚀 Installation
 
-## 🚀 **Installation**
-
+### 1. Dépendances Python
 ```bash
-# Installer les dépendances
 pip install -r requirements.txt
-
-# Le module est prêt à utiliser
-python cli.py --help
 ```
 
-## 💻 **Utilisation CLI**
+### 2. Ollama et Llama 3.1 (pour la structuration IA)
+```bash
+# Installation d'Ollama
+curl -fsSL https://ollama.ai/install.sh | sh
 
-### **Commandes principales**
+# Téléchargement du modèle Llama 3.1
+ollama pull llama3.1:latest
+
+# Démarrage du serveur Ollama
+ollama serve
+```
+
+## 💻 Utilisation
+
+### 🔧 Extraction PDF Simple
 
 ```bash
 # Extraire un fichier unique
@@ -55,86 +62,163 @@ python cli.py --file FT/unilever/3011360006707.pdf
 # Extraire tous les PDFs d'un dossier
 python cli.py --folder FT/unilever
 
-# Extraire avec dossier de sortie personnalisé
-python cli.py --folder FT/charles_alice --output ./mes_extractions
-
 # Extraction rapide sans images
 python cli.py --folder FT/unilever --no-images
 
-# Mode silencieux
-python cli.py --folder FT/charles_alice --quiet
+# Avec dossier de sortie personnalisé
+python cli.py --folder FT/charles_alice --output ./mes_extractions
 ```
 
-### **Scripts de raccourci**
+### 🤖 Extraction + Structuration IA
 
 ```bash
-# Windows
-extract.bat --folder FT/unilever
-
-# Unix/Linux
-./extract.sh --folder FT/charles_alice
+# Script principal intégré
+python main_langchain.py
 ```
 
-### **Options disponibles**
+Menu interactif avec options :
+1. Traiter un fichier PDF unique (extraction + structuration)
+2. Traiter tous les PDFs d'un répertoire
+3. Traiter les fichiers texte déjà extraits (structuration seule)
+4. Afficher la configuration
+5. Quitter
 
-| Option | Description |
-|--------|-------------|
-| `--file`, `-f` | Extraire un fichier PDF unique |
-| `--folder`, `-d` | Extraire tous les PDFs d'un dossier |
-| `--output`, `-o` | Dossier de sortie personnalisé |
-| `--no-images` | Ignorer l'extraction d'images (plus rapide) |
-| `--quiet`, `-q` | Supprimer l'affichage de progression |
-| `--help` | Afficher l'aide complète |
+### 📊 Test de la Structuration
 
-## 📁 **Organisation des résultats**
+```bash
+# Test sur un fichier spécifique
+python test_langchain_extraction.py
 
-### **Structure automatique par fichier**
+# Test rapide
+python quick_test.py
+```
 
-Chaque PDF extrait génère un dossier dédié :
+## 📁 Organisation des Données
+
+### Structure Automatique
 
 ```
 extracted_data/
-├── 8710522647561/                    # Nom du fichier PDF
-│   ├── extracted_8710522647561.txt   # Contenu textuel
-│   └── metadata_8710522647561.json   # Métadonnées
+├── 3288310840869/                      # Code EAN du produit
+│   ├── extracted_3288310840869.md      # Contenu textuel structuré
+│   └── metadata_3288310840869.json     # Métadonnées d'extraction
 ├── 3011360006707/
-│   ├── extracted_3011360006707.txt
+│   ├── extracted_3011360006707.md
 │   └── metadata_3011360006707.json
 └── ...
 
 extracted_images/
-├── 8710522647561/                    # Images du PDF
-│   ├── 8710522647561.pdf-0-0.png
-│   └── ...
-├── 3011360006707/
-│   ├── 3011360006707.pdf-0-0.png
+├── 3288310840869/                      # Images du PDF
+│   ├── 3288310840869.pdf-0-0.png
+│   ├── 3288310840869.pdf-0-1.png
 │   └── ...
 └── ...
 ```
 
-### **Organisation par marque (optionnel)**
+### Données Structurées (JSON)
 
-```bash
-# Organiser par marque
-python cli.py --folder FT/unilever --output extracted_data/unilever
-python cli.py --folder FT/charles_alice --output extracted_data/charles_alice
+Exemple de sortie structurée :
+
+```json
+{
+  "success": true,
+  "product_sheet": {
+    "product_name": "Ratatouille BIO",
+    "legal_denomination": "Ratatouille Bio",
+    "ean_code": "3288310840869",
+    "ingredients": [
+      "Tomates* 38%",
+      "aubergines* 20%",
+      "courgettes* 19%",
+      "poivrons* 8%",
+      "oignons* 6%",
+      "huile de colza*",
+      "sucre*",
+      "sel",
+      "huile d'olive vierge extra* 0,5%",
+      "amidon de riz*",
+      "épices et aromates*",
+      "correcteur d'acidité: acide citrique"
+    ],
+    "additives": ["acide citrique"],
+    "allergens": null,
+    "shelf_life": "24 mois",
+    "storage_conditions": "A conserver dans un endroit sec et frais à l'abri de la lumière.",
+    "packaging_country": "France",
+    "nutritional_values": [
+      {
+        "name": "Energie",
+        "per_100g": "72 kcal / 299 kJ"
+      },
+      {
+        "name": "Matières grasses",
+        "per_100g": "5 g / 100g"
+      }
+    ],
+    "manufacturer_contact": {
+      "nom": "Charles Faraud S.A.S.",
+      "adresse": "Z.A. La Tapy - Avenue de GLADENBACH - 84 170 Monteux - France",
+      "telephone": "+ 33 (0)4 90 66 95 00",
+      "email": "servicequalite@charlesetalice.fr"
+    },
+    "extraction_date": "2025-06-16T11:19:34.729648",
+    "source_file": "extracted_3288310840869.md"
+  },
+  "confidence_score": 0.92
+}
 ```
 
-Résultat :
-```
-extracted_data/
-├── unilever/
-│   ├── 8710522647561/
-│   └── 3011360006707/
-├── charles_alice/
-│   ├── 3288310846038/
-│   └── 3288310845475/
-└── ...
+## 📋 Schéma des Données Structurées
+
+### Modèle Principal : `ProductSheet`
+
+| Champ | Type | Description |
+|-------|------|-------------|
+| `product_name` | `string` | Nom commercial du produit |
+| `legal_denomination` | `string` | Dénomination légale |
+| `ean_code` | `string` | Code EAN principal |
+| `ingredients` | `list[string]` | Liste des ingrédients |
+| `additives` | `list[string]` | Liste des additifs |
+| `allergens` | `list[Allergen]` | Allergènes avec statut (Oui/Traces) |
+| `shelf_life` | `string` | Durée de vie / DDM |
+| `storage_conditions` | `string` | Conditions de conservation |
+| `packaging_country` | `string` | Pays de conditionnement |
+| `nutritional_values` | `list[NutritionalValue]` | Valeurs nutritionnelles |
+| `manufacturer_contact` | `ManufacturerContact` | Informations du fabricant |
+
+### Modèles Spécialisés
+
+**Allergène** :
+```json
+{
+  "name": "Céréales contenant du gluten",
+  "status": "Oui"  // "Oui", "Traces", "Non"
+}
 ```
 
-## 🔧 **Utilisation Programmatique**
+**Valeur Nutritionnelle** :
+```json
+{
+  "name": "Energie",
+  "per_100g": "72 kcal / 299 kJ",
+  "per_100ml_sold": null,
+}
+```
 
-### **Exemple simple**
+**Contact Fabricant** :
+```json
+{
+  "nom": "Charles Faraud S.A.S.",
+  "adresse": "Z.A. La Tapy - Avenue de GLADENBACH - 84 170 Monteux - France",
+  "telephone": "+ 33 (0)4 90 66 95 00",
+  "email": "servicequalite@charlesetalice.fr",
+  "website": null
+}
+```
+
+## 🔧 Utilisation Programmatique
+
+### Extraction PDF Seule
 
 ```python
 from extractor import TechnicalSheetExtractor
@@ -147,166 +231,234 @@ if saved_files:
     print(f"Fichiers sauvegardés : {saved_files}")
 ```
 
-### **Configuration personnalisée**
+### Structuration IA Seule
 
 ```python
-from extractor import TechnicalSheetExtractor, ExtractionConfig
+from extractor.langchain_extractor import LangChainExtractor
 
-# Configuration personnalisée
-config = ExtractionConfig(
-    output_directory="./mes_extractions",
-    write_images=False,  # Pas d'images
-    dpi=300,            # Haute résolution si images activées
-    show_progress=False  # Mode silencieux
+# Initialisation
+extractor = LangChainExtractor(
+    model_name="llama3.1:latest",
+    base_url="http://localhost:11434"
 )
 
-extractor = TechnicalSheetExtractor(config)
+# Extraction depuis un fichier texte déjà extrait
+result = extractor.extract_from_file("extracted_data/3288310840869/extracted_3288310840869.md")
 
-# Extraction multiple
-pdf_files = ["file1.pdf", "file2.pdf", "file3.pdf"]
-results = extractor.extract_and_save_multiple(pdf_files)
-
-# Afficher le résumé
-extractor.print_extraction_summary(results)
+if result.success:
+    print(f"Produit : {result.product_sheet.product_name}")
+    print(f"Confiance : {result.confidence_score:.2f}")
+    print(f"Ingrédients : {len(result.product_sheet.ingredients)}")
+else:
+    print(f"Erreurs : {result.errors}")
 ```
 
-### **Extraction seule (sans sauvegarde)**
+### Pipeline Complet
 
 ```python
 from extractor import TechnicalSheetExtractor
+from extractor.langchain_extractor import LangChainExtractor
 
-extractor = TechnicalSheetExtractor()
+# 1. Extraction PDF
+pdf_extractor = TechnicalSheetExtractor()
+saved_files = pdf_extractor.extract_and_save("FT/unilever/product.pdf")
 
-# Extraction en mémoire uniquement
-data = extractor.extract_only("FT/unilever/3011360006707.pdf")
-
-if data:
-    print(f"Données extraites : {len(data)} chunks")
+# 2. Structuration IA
+ai_extractor = LangChainExtractor()
+if saved_files and 'text_file' in saved_files:
+    result = ai_extractor.extract_from_file(saved_files['text_file'])
+    
+    if result.success:
+        # Sauvegarde des données structurées
+        import json
+        with open('structured_data.json', 'w', encoding='utf-8') as f:
+            json.dump(result.model_dump(), f, indent=2, ensure_ascii=False)
 ```
 
-## 📊 **Contenu des fichiers générés**
+## ⚙️ Configuration
 
-### **Fichier texte (`extracted_*.txt`)**
-- Contenu textuel complet du PDF
-- Organisé par chunks (sections)
-- Tableaux détectés et formatés
-- Texte structuré et lisible
+### Variables d'Environnement
 
-### **Métadonnées (`metadata_*.json`)**
-```json
-{
-  "extraction_timestamp": "2025-01-13T10:30:00",
-  "original_file": "/path/to/original.pdf",
-  "file_size_bytes": 245760,
-  "total_chunks": 3,
-  "chunks_with_tables": 2,
-  "chunks_with_images": 1,
-  "total_text_length": 5420
-}
-```
-
-## ⚙️ **Configuration avancée**
-
-### **Paramètres disponibles**
-
-```python
-@dataclass
-class ExtractionConfig:
-    # Options d'extraction
-    page_chunks: bool = True
-    extract_words: bool = True
-    
-    # Extraction de tableaux
-    table_strategy: str = "lines_strict"
-    
-    # Extraction d'images
-    write_images: bool = True
-    image_format: str = "png"
-    dpi: int = 200
-    image_path: str = "./extracted_images"
-    
-    # Options de mise en page
-    margins: Tuple[int, int, int, int] = (5, 5, 5, 5)
-    show_progress: bool = True
-    
-    # Paramètres de sortie
-    output_directory: str = "./extracted_data"
-    save_raw_text: bool = True
-```
-
-## 🎯 **Cas d'usage**
-
-### **Traitement par lots**
 ```bash
-# Traiter toutes les fiches Unilever
-python cli.py --folder FT/unilever --output extracted_data/unilever
+# Configuration Ollama
+export OLLAMA_BASE_URL="http://localhost:11434"
+export OLLAMA_MODEL="llama3.1:latest"
+export OLLAMA_TEMPERATURE="0.1"
 
-# Traiter toutes les fiches Charles Alice
-python cli.py --folder FT/charles_alice --output extracted_data/charles_alice
+# Configuration extraction
+export EXTRACTED_DATA_DIR="extracted_data"
+export OUTPUT_DIR="structured_output"
+export LOG_LEVEL="INFO"
 ```
 
-### **Extraction rapide sans images**
-```bash
-# Plus rapide pour le texte uniquement
-python cli.py --folder FT/unilever --no-images --quiet
+### Fichier `.env` (optionnel)
+
+```env
+OLLAMA_MODEL=llama3.1:latest
+OLLAMA_TEMPERATURE=0.1
+OUTPUT_DIR=structured_output
+LOG_LEVEL=INFO
 ```
 
-### **Fichier spécifique avec images haute résolution**
-```python
-from extractor import TechnicalSheetExtractor, ExtractionConfig
+## 📈 Score de Confiance
 
-config = ExtractionConfig(dpi=300, image_format="png")
-extractor = TechnicalSheetExtractor(config)
-extractor.extract_and_save("FT/unilever/important_file.pdf")
-```
+Le système calcule automatiquement un score de confiance (0-1) basé sur :
 
-## 🔍 **Fonctionnalités d'extraction**
+- **Complétude des données** : nombre de champs remplis
+- **Qualité des extractions** : cohérence des données
+- **Complexité des structures** : allergènes, nutrition, contact
 
+**Interprétation** :
+- `0.8-1.0` : Extraction excellente ✅
+- `0.6-0.8` : Extraction bonne ✅
+- `0.4-0.6` : Extraction moyenne ⚠️
+- `0.0-0.4` : Extraction faible ❌
+
+## 🔍 Fonctionnalités
+
+### Extraction PDF
 ✅ **Texte structuré** - Extraction complète du contenu textuel  
 ✅ **Tableaux avancés** - Détection et formatage des tableaux complexes  
 ✅ **Images haute qualité** - Extraction PNG avec DPI configurable  
 ✅ **Métadonnées riches** - Statistiques détaillées d'extraction  
 ✅ **Organisation automatique** - Dossiers par fichier PDF  
-✅ **Gestion d'erreurs** - Traitement robuste des échecs  
-✅ **Progress tracking** - Suivi en temps réel des extractions  
 
-## 🛠️ **Technologies utilisées**
+### Structuration IA
+✅ **Extraction intelligente** - Reconnaissance des champs spécialisés  
+✅ **Validation Pydantic** - Typage strict et validation des données  
+✅ **Gestion des allergènes** - Filtrage automatique par statut  
+✅ **Valeurs nutritionnelles** - Extraction complète et structurée  
+✅ **Informations fabricant** - Parsing intelligent des coordonnées  
+✅ **Score de confiance** - Évaluation automatique de la qualité  
 
-- **PyMuPDF4LLM** - Moteur d'extraction avancé
+## 🛠️ Technologies
+
+- **PyMuPDF4LLM** - Moteur d'extraction PDF avancé
+- **LangChain** - Framework d'orchestration IA
+- **Ollama + Llama 3.1** - Modèle de langage local
+- **Pydantic** - Validation et sérialisation des données
 - **Python 3.7+** - Langage principal
-- **Pathlib** - Gestion moderne des chemins
-- **JSON** - Format de métadonnées
-- **Argparse** - Interface CLI robuste
 
-## 📈 **Performance**
+## 📊 Performance
 
-- **Vitesse** : ~2-5 secondes par PDF (selon la taille)
+### Extraction PDF
+- **Vitesse** : ~2-5 secondes par PDF
 - **Précision** : >90% pour les tableaux complexes
-- **Robustesse** : Gestion d'erreurs complète
-- **Scalabilité** : Traitement par lots efficace
+- **Formats supportés** : PDF standard et complexes
 
-## 🚨 **Gestion d'erreurs**
+### Structuration IA
+- **Vitesse** : ~10-30 secondes par fichier (selon complexité)
+- **Précision** : >85% sur les champs principaux
+- **Modèle** : Llama 3.1 (8B ou 70B selon besoins)
+
+## 🚨 Gestion d'Erreurs
 
 Le système gère automatiquement :
 - Fichiers PDF corrompus ou inaccessibles
-- Erreurs d'extraction PyMuPDF4LLM
-- Problèmes de permissions de fichiers
-- Espaces disque insuffisants
+- Erreurs de connexion Ollama
+- Problèmes de parsing JSON
+- Validation Pydantic échouée
 - Interruptions utilisateur (Ctrl+C)
 
-## 📞 **Support**
+## 🐛 Dépannage
+
+### Problèmes Courants
+
+1. **Ollama non accessible**
+   ```bash
+   # Vérifier le statut
+   curl http://localhost:11434/api/tags
+   
+   # Redémarrer si nécessaire
+   ollama serve
+   ```
+
+2. **Modèle non trouvé**
+   ```bash
+   # Lister les modèles
+   ollama list
+   
+   # Télécharger Llama 3.1
+   ollama pull llama3.1:latest
+   ```
+
+3. **Erreurs de parsing JSON**
+   - Réduire la température : `OLLAMA_TEMPERATURE=0.05`
+   - Vérifier les prompts pour la cohérence
+
+4. **Performance lente**
+   - Utiliser un modèle plus petit : `llama3.1:8b`
+   - Réduire la complexité des prompts
+
+### Logs et Debugging
+
+```bash
+# Activer les logs détaillés
+export LOG_LEVEL=DEBUG
+
+# Tester la connectivité Ollama
+python -c "
+from langchain_ollama import ChatOllama
+llm = ChatOllama(model='llama3.1:latest')
+print(llm.invoke('Test de connexion'))
+"
+```
+
+## 📞 Support
 
 ```bash
 # Aide complète
 python cli.py --help
+python main_langchain.py
 
 # Test sur un fichier unique
 python cli.py --file FT/unilever/3011360006707.pdf
 
 # Vérification de l'installation
 python -c "from extractor import TechnicalSheetExtractor; print('✅ Module OK')"
+python -c "from extractor.langchain_extractor import LangChainExtractor; print('✅ LangChain OK')"
+```
+
+## 🎯 Cas d'Usage
+
+### Traitement par Lots
+```bash
+# Traiter toutes les fiches Unilever (PDF + IA)
+python main_langchain.py
+# Sélectionner option 2, puis FT/unilever
+
+# Extraction PDF seule pour traitement ultérieur
+python cli.py --folder FT/charles_alice --no-images --quiet
+```
+
+### Structuration de Données Existantes
+```bash
+# Si vous avez déjà des fichiers texte extraits
+python main_langchain.py
+# Sélectionner option 3
+```
+
+### Intégration dans Pipeline
+```python
+# Exemple d'intégration dans un système plus large
+from extractor.langchain_extractor import LangChainExtractor
+import json
+
+def process_product_sheets(pdf_folder):
+    extractor = LangChainExtractor()
+    results = []
+    
+    for pdf_file in pdf_folder.glob("*.pdf"):
+        # Supposons que l'extraction PDF a déjà été faite
+        text_file = f"extracted_data/{pdf_file.stem}/extracted_{pdf_file.stem}.md"
+        
+        result = extractor.extract_from_file(text_file)
+        if result.success:
+            results.append(result.product_sheet.model_dump())
+    
+    return results
 ```
 
 ---
 
-**Module Extractor** - Architecture propre et modulaire pour l'extraction PDF 🎉 
+**Data Warehouse Extractor** - Solution complète d'extraction et structuration de fiches techniques 🎉 

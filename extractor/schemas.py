@@ -20,21 +20,15 @@ class NutritionalValue(BaseModel):
     """Valeur nutritionnelle"""
     name: str = Field(description="Nom de la valeur nutritionnelle")
     per_100g: Optional[str] = Field(None, description="Valeur pour 100g de produit")
-    per_100ml_sold: Optional[str] = Field(None, description="Valeur pour 100ml de produit tel que vendu")
-    per_100ml_prepared: Optional[str] = Field(None, description="Valeur pour 100ml de produit préparé")
-    per_portion: Optional[str] = Field(None, description="Valeur par portion")
-    percentage_reference: Optional[str] = Field(None, description="Pourcentage d'apport de référence")
 
 
-class LogisticsInfo(BaseModel):
-    """Informations logistiques"""
-    element_type: str = Field(description="Type d'élément (UNITE CONSOMMATEUR, CARTON, PALETTE)")
-    ean: Optional[str] = Field(None, description="Code EAN")
-    description: Optional[str] = Field(None, description="Description du produit")
-    net_weight: Optional[str] = Field(None, description="Poids net en kg")
-    gross_weight: Optional[str] = Field(None, description="Poids brut en kg")
-    dimensions: Optional[Dict[str, str]] = Field(None, description="Dimensions (longueur, largeur, hauteur)")
-    volume: Optional[str] = Field(None, description="Volume en dm3")
+class ManufacturerContact(BaseModel):
+    """Informations de contact du fabricant"""
+    nom: Optional[str] = Field(None, description="Nom du fabricant")
+    adresse: Optional[str] = Field(None, description="Adresse du fabricant")
+    telephone: Optional[str] = Field(None, description="Numéro de téléphone")
+    email: Optional[str] = Field(None, description="Adresse email")
+    website: Optional[str] = Field(None, description="Site web")
 
 
 class ProductSheet(BaseModel):
@@ -52,12 +46,6 @@ class ProductSheet(BaseModel):
     # Allergènes
     allergens: Optional[List[Allergen]] = Field(None, description="Liste des allergènes avec leur statut")
     
-    # Avantages produit
-    product_benefits: Optional[List[str]] = Field(None, description="Liste des avantages du produit")
-    
-    # Informations techniques
-    preparation_instructions: Optional[str] = Field(None, description="Mode d'emploi/préparation")
-    dosage_instructions: Optional[str] = Field(None, description="Instructions de dosage")
     shelf_life: Optional[str] = Field(None, description="DDM garantie réception entrepôt")
     storage_conditions: Optional[str] = Field(None, description="Mode de conservation")
     packaging_country: Optional[str] = Field(None, description="Pays de conditionnement")
@@ -65,26 +53,8 @@ class ProductSheet(BaseModel):
     # Informations nutritionnelles
     nutritional_values: Optional[List[NutritionalValue]] = Field(None, description="Valeurs nutritionnelles")
     
-    # Caractéristiques diététiques
-    vegetarian_suitable: Optional[bool] = Field(None, description="Convient aux végétariens")
-    vegan_suitable: Optional[bool] = Field(None, description="Convient aux végétaliens")
-    organic_product: Optional[bool] = Field(None, description="Produit biologique")
-    ionized_product: Optional[bool] = Field(None, description="Produit ionisé")
-    gmo_free: Optional[bool] = Field(None, description="Sans OGM")
-    alcohol_free: Optional[bool] = Field(None, description="Sans alcool")
-    kosher: Optional[bool] = Field(None, description="Kasher")
-    halal: Optional[bool] = Field(None, description="Halal")
-    
-    # Informations logistiques
-    logistics_info: Optional[List[LogisticsInfo]] = Field(None, description="Informations logistiques")
-    customs_code: Optional[str] = Field(None, description="Code douanier")
-    
-    # Qualité et certifications
-    quality_standards: Optional[List[str]] = Field(None, description="Normes qualité (FSSC 22000, HACCP, etc.)")
-    requires_health_approval: Optional[bool] = Field(None, description="Nécessite un agrément sanitaire")
-    
     # Contact
-    manufacturer_contact: Optional[Dict[str, str]] = Field(None, description="Informations de contact du fabricant")
+    manufacturer_contact: Optional[ManufacturerContact] = Field(None, description="Informations de contact du fabricant")
     
     # Métadonnées
     extraction_date: Optional[str] = Field(None, description="Date d'extraction des données")

@@ -1,0 +1,47 @@
+{
+  "success": true,
+  "product_sheet": {
+    "product_name": "Roux brun instantané déshydraté",
+    "legal_denomination": "Roux brun instantané déshydraté",
+    "ean_code": "3011360006707",
+    "ingredients": [
+      "Farine de BLÉ, graisse de palme, colorant caramel E150c"
+    ],
+    "additives": [
+      "E15c - Caramel ammoniacal -"
+    ],
+    "allergens": [
+      {
+        "name": "Céréales contenant du gluten",
+        "status": "Oui"
+      }
+    ],
+    "shelf_life": "120 Jours",
+    "storage_conditions": "À conserver entre 2°C et 25°C",
+    "packaging_country": "Allemagne",
+    "nutritional_values": [
+      {
+        "name": "Valeur énergétique",
+        "per_100g": "2451kJ - 592kcal"
+      },
+      {
+        "name": "Matières grasses",
+        "per_100g": "41 g"
+      },
+      {
+        "name": "- dont acides gras saturés",
+        "per_100g": "30 g"
+      }
+    ],
+    "manufacturer_contact": {
+      "nom": "UNILEVER France Food Solutions",
+      "adresse": "20 rue des Deux Gares, 92842 Rueil-Malmaison cedex",
+      "telephone": "09 69 32 70 03 (appel non surtaxé)",
+      "email": "Qualite.foodsolutions@unilever.com",
+      "website": "www.ufs.com"
+    },
+    "extraction_date": "2025-06-16T11:29:01.014487",
+    "source_file": "extracted_3011360006707.md"
+  },
+  "confidence_score": 1.0
+}
