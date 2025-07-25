@@ -1,5 +1,6 @@
 import json
 import logging
+import re
 from datetime import datetime
 from typing import Optional, Dict, Any
 from pathlib import Path
@@ -69,78 +70,81 @@ class LangChainExtractor:
   "source_file": "string"
 }}
 
-RÈGLE CRUCIALE POUR LES ALLERGÈNES : Dans la liste finale "allergens", ne mets QUE les allergènes avec status "Oui" ou "Traces". 
-Ignore complètement ceux avec status "Non" - ne les inclus pas du tout dans la liste finale."""
+RÈGLE ABSOLUE : Dans "allergens", ne mets QUE les allergènes avec status "Oui" ou "Traces"."""
         
         return f"""Tu es un expert en extraction de données de fiches produits alimentaires.
 
-Ton rôle est d'analyser le contenu de fiches produits et d'extraire toutes les informations pertinentes dans un format JSON structuré.
+INSTRUCTIONS POUR LES CODES EAN :
+- ean_code : Code EAN principal du produit (généralement 13 chiffres)
+- ean_carton : Code EAN carton/couche (DUN 14, commence souvent par 1)
+- ean_palette : Code EAN palette (DUN 14, commence souvent par 2)
 
-INSTRUCTIONS SPÉCIFIQUES POUR LES CODES EAN :
+MÉTHODE CHAIN-OF-THOUGHT POUR LES ALLERGÈNES :
 
-1. CODES EAN À EXTRAIRE :
-   - ean_code : Code EAN principal du produit (EAN 13 GENCOD Produit) - généralement 13 chiffres
-   - ean_carton : Code EAN carton/couche (DUN 14 Unité Logistique Carton) - généralement commence par 1
-   - ean_palette : Code EAN palette (DUN 14 Unité Logistique Palette) - généralement commence par 2
+Quand tu vois un tableau d'allergènes, applique cette méthode de réflexion étape par étape :
 
-2. OÙ CHERCHER LES CODES EAN :
-   - Sections "Etiquetage", "Marquage", "Colisage", "Palettisation"
-   - Tableaux de codes-barres ou identifiants
-   - Lignes mentionnant "EAN", "GENCOD", "DUN 14"
-   - Exemples de formats :
-     * EAN 13 GENCOD Produit : 3288310840869
-     * DUN 14 Unité Logistique Carton : 13288310840866
-     * DUN 14 Unité Logistique Palette : 23288310840863
+ÉTAPE 1 - ANALYSER LA STRUCTURE :
+Pense : "Je vois un tableau. Quelles sont les colonnes ?"
+- Identifie les en-têtes de colonnes
+- Note les variations possibles : "Oui/Non", "Présent/Absent", "Contient/Ne contient pas", "✓/✗", etc.
 
-INSTRUCTIONS CRITIQUES POUR LES ALLERGÈNES :
+ÉTAPE 2 - ANALYSER LIGNE PAR LIGNE :
+Pour chaque ligne d'allergène, pense :
+"Où est située la marque (x, ✓, ■, etc.) dans cette ligne ?"
 
-1. ANALYSE MÉTHODIQUE DES TABLEAUX D'ALLERGÈNES :
-   
-   Quand tu vois un tableau comme :
-   |Allergènes|Oui|Traces|Non|
-   |Céréales contenant du gluten|x|||
-   |Lupin et produits à base de lupin|||x|
-   
-   PROCÉDURE STRICTE :
-   - Identifie d'abord les colonnes : "Oui", "Traces", "Non"
-   - Pour chaque allergène, regarde EXACTEMENT dans quelle colonne se trouve le "x"
-   - Si "x" est dans colonne "Oui" → status: "Oui" → INCLURE dans la liste finale
-   - Si "x" est dans colonne "Traces" → status: "Traces" → INCLURE dans la liste finale  
-   - Si "x" est dans colonne "Non" → status: "Non" → NE PAS INCLURE du tout
-   
-   EXEMPLE CONCRET :
-   - "Céréales contenant du gluten" avec "x" dans "Oui" → À INCLURE avec status "Oui"
-   - "Lupin" avec "x" dans "Non" → NE PAS INCLURE (ignorer complètement)
+MÉTHODE DE COMPTAGE DES COLONNES :
+- Compte les colonnes depuis la gauche : 1, 2, 3, 4...
+- Colonne 1 = Nom de l'allergène
+- Colonne 2 = Généralement "Oui/Présent" 
+- Colonne 3 = Généralement "Traces"
+- Colonne 4 = Généralement "Non/Absent"
 
-2. VÉRIFICATION DOUBLE :
-   - Compte les colonnes depuis la gauche
-   - Vérifie que tu lis la bonne ligne pour chaque allergène
-   - Ne te fie pas aux noms similaires, lis ligne par ligne
+VÉRIFICATION SYSTÉMATIQUE :
+Pour chaque ligne, demande-toi : "Dans quelle POSITION exacte est le 'x' ?"
+- Si 'x' en position 2 (après le nom) → status: "Oui"
+- Si 'x' en position 3 (après le nom) → status: "Traces"  
+- Si 'x' en position 4 (après le nom) → NE PAS INCLURE
 
-3. RÈGLE FINALE ABSOLUE :
-   Dans le JSON final, la liste "allergens" ne doit contenir QUE les allergènes avec "x" dans les colonnes "Oui" ou "Traces".
-   Tous les autres sont à ignorer complètement.
+ÉTAPE 3 - RAISONNEMENT LOGIQUE :
+Pense : "Est-ce que ce résultat a du sens ?"
+- Si j'ai 15+ allergènes, c'est probablement une erreur
+- La plupart des produits ont 0-5 allergènes réellement présents
+- "Sel" n'est pas un allergène réglementaire
+
+ÉTAPE 4 - DÉCISION FINALE :
+- Si marque dans colonne "Oui/Présent" → status: "Oui" → INCLURE
+- Si marque dans colonne "Traces" → status: "Traces" → INCLURE  
+- Si marque dans colonne "Non/Absent" → NE PAS INCLURE DU TOUT
+
+EXEMPLE DE RAISONNEMENT :
+"Je vois un tableau avec colonnes : Allergènes | Oui | Traces | Non
+Ligne 'Gluten' : le 'x' est dans la colonne 'Oui' → J'inclus avec status='Oui'
+Ligne 'Soja' : le 'x' est dans la colonne 'Non' → Je n'inclus pas du tout"
+Ligne 'Céleri' : le 'x' est dans la colonne 'Traces' → J'inclus avec status='Traces'
+IMPORTANT :  Si la colonne 'Non' ou 'Traces' est vide alors je n'inclus pas du tout.
+
+EXEMPLE CONCRET D'APPLICATION :
+Tableau : | Allergènes | Oui | Traces | Non |
+         | Soja       | x   |        |     |
+         | Lait       | x   |        |     |
+         | Céleri     |     | x      |     |
+         | Crustacés  |     |        | x   |
+
+ANALYSE CORRECTE :
+- Soja : 'x' en position 2 (colonne Oui) → "name": "Soja", "status": "Oui"
+- Lait : 'x' en position 2 (colonne Oui) → "name": "Lait", "status": "Oui"
+- Céleri : 'x' en position 3 (colonne Traces) → "name": "Céleri", "status": "Traces"
+- Crustacés : 'x' en position 4 (colonne Non) → NE PAS INCLURE
 
 AUTRES INSTRUCTIONS :
-- Analyse attentivement tout le contenu fourni
-- Extrait TOUTES les informations disponibles, même partielles
-- Pour les valeurs booléennes, utilise true/false ou null si non spécifié
+- Analyse attentivement tout le contenu
 - Pour les listes vides, utilise [] plutôt que null
-- Sois précis avec les unités et les valeurs numériques
 - Si une information n'est pas disponible, utilise null
-
-TYPES DE DONNÉES À EXTRAIRE :
-- Informations générales (nom, dénomination légale, EAN)
-- Codes EAN pour tous les niveaux de conditionnement
-- Ingrédients et additifs
-- Allergènes avec leur statut (SEULEMENT ceux présents ou en traces)
-- Informations nutritionnelles complètes
-- Certifications qualité
-- Informations de contact
+- Revérifie les réponseses que tu as données pour les allergènes afin de corriger celles que tu as mal placées.
 
 {format_instructions}
 
-Réponds UNIQUEMENT avec le JSON structuré, sans texte supplémentaire."""
+Applique la méthode Chain-of-Thought pour les allergènes, puis réponds UNIQUEMENT avec le JSON structuré."""
 
     def _custom_parser(self, ai_message):
         """Parser personnalisé avec post-traitement"""
@@ -184,13 +188,56 @@ Réponds UNIQUEMENT avec le JSON structuré, sans texte supplémentaire."""
                 # Convertit la chaîne en liste avec un seul élément
                 result[field] = [result[field]]
         
-        # Filtrage des allergènes - ne garde que ceux avec statut "Oui" ou "Traces"
+        # Correction des valeurs nutritionnelles - normaliser le format
+        if 'nutritional_values' in result and result['nutritional_values']:
+            normalized_nutritional = []
+            
+            for item in result['nutritional_values']:
+                if isinstance(item, dict):
+                    # Si c'est un dict avec des clés non-standard, le convertir
+                    if 'name' not in item:
+                        # Essayer de détecter et convertir les formats alternatifs
+                        for key, value in item.items():
+                            if key not in ['per_100g', 'percentage_reference']:
+                                # Utiliser la première clé comme nom
+                                normalized_item = {
+                                    'name': key.replace('_', ' ').title(),
+                                    'per_100g': str(value) if value is not None else None,
+                                    'percentage_reference': None
+                                }
+                                normalized_nutritional.append(normalized_item)
+                                break
+                    else:
+                        # Format déjà correct
+                        normalized_nutritional.append(item)
+                        
+            result['nutritional_values'] = normalized_nutritional if normalized_nutritional else None
+        
+        # Filtrage strict des allergènes - ne garde que ceux avec statut "Oui" ou "Traces"
         if 'allergens' in result and result['allergens']:
             filtered_allergens = []
+            
             for allergen in result['allergens']:
-                if isinstance(allergen, dict) and allergen.get('status') in ['Oui', 'Traces']:
-                    filtered_allergens.append(allergen)
+                if isinstance(allergen, dict):
+                    status = allergen.get('status', '').strip()
+                    name = allergen.get('name', '').strip()
+                    
+                    # Vérifications strictes
+                    if status in ['Oui', 'Traces'] and name:
+                        # Exclure "Sel" qui n'est pas un allergène réglementaire
+                        if name.lower() != 'sel':
+                            filtered_allergens.append({
+                                'name': name,
+                                'status': status
+                            })
+            
+            # Si aucun allergène valide, mettre à null
             result['allergens'] = filtered_allergens if filtered_allergens else None
+        
+        # Nettoyage des champs vides
+        for field in ['ean_code', 'ean_carton', 'ean_palette', 'product_name', 'legal_denomination']:
+            if field in result and result[field] == '':
+                result[field] = None
         
         return result
 
@@ -208,7 +255,7 @@ Réponds UNIQUEMENT avec le JSON structuré, sans texte supplémentaire."""
         try:
             self.logger.info(f"Début de l'extraction pour {source_file or 'contenu fourni'}")
             
-            # Exécution de la chaîne LangChain
+            # Exécution de la chaîne LangChain avec Chain-of-Thought
             result = self.chain.invoke({
                 "content": content
             })

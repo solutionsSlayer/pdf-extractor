@@ -1,5 +1,5 @@
-PyMuPDF==1.23.14 
-pymupdf4llm
+docling
+deepsearch-glm[toolkit]
 langchain==0.3.12
 langchain-core==0.3.25
 langchain-ollama==0.2.0

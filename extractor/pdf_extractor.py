@@ -2,7 +2,7 @@
 PDF extraction module for technical sheets
 """
 
-import pymupdf4llm
+from docling.document_converter import DocumentConverter
 from pathlib import Path
 from typing import Optional, Union, List, Dict, Any
 
@@ -11,7 +11,7 @@ from .config import ExtractionConfig
 
 class PDFExtractor:
     """
-    Handles PDF extraction using pymupdf4llm library.
+    Handles PDF extraction using Docling library.
     
     Follows Single Responsibility Principle by focusing only on PDF extraction logic.
     """
@@ -24,8 +24,12 @@ class PDFExtractor:
             config: Extraction configuration. If None, uses default configuration.
         """
         self.config = config or ExtractionConfig()
+        
+        # Initialize Docling converter with default configuration
+        # The new Docling API handles most settings automatically
+        self.converter = DocumentConverter()
     
-    def extract(self, pdf_path: Union[str, Path]) -> Optional[Union[List[Dict[str, Any]], str]]:
+    def extract(self, pdf_path: Union[str, Path]) -> Optional[str]:
         """
         Extract content from a PDF file.
         
@@ -33,7 +37,7 @@ class PDFExtractor:
             pdf_path: Path to the PDF file to extract
             
         Returns:
-            Extracted data structure or None if extraction fails
+            Extracted markdown content or None if extraction fails
             
         Raises:
             FileNotFoundError: If the PDF file doesn't exist
@@ -44,16 +48,18 @@ class PDFExtractor:
         print(f"🔄 Extracting: {pdf_path.name}")
         
         try:
-            # Use PDF name for organized image storage
-            pdf_name = pdf_path.stem
+            # Convert PDF to document using Docling
+            result = self.converter.convert(str(pdf_path))
             
-            extracted_data = pymupdf4llm.to_markdown(
-                str(pdf_path),
-                **self.config.to_pymupdf_kwargs(pdf_name)
-            )
+            # Extract markdown content
+            markdown_content = result.document.export_to_markdown()
+            
+            # Handle images if enabled - simplified approach
+            if self.config.write_images:
+                self._handle_images(pdf_path)
             
             print(f"✅ Successfully extracted: {pdf_path.name}")
-            return extracted_data
+            return markdown_content
             
         except Exception as e:
             print(f"❌ Extraction failed for {pdf_path.name}: {e}")
@@ -83,7 +89,26 @@ class PDFExtractor:
         
         return path
     
-    def extract_multiple(self, pdf_paths: List[Union[str, Path]]) -> Dict[str, Optional[Union[List[Dict[str, Any]], str]]]:
+    def _handle_images(self, pdf_path: Path) -> None:
+        """
+        Handle image extraction for the PDF.
+        Note: With Docling 2.x, images are handled automatically during conversion
+        
+        Args:
+            pdf_path: Original PDF path for reference
+        """
+        try:
+            # Create image directory structure
+            pdf_name = pdf_path.stem
+            image_dir = Path(self.config.image_path) / pdf_name
+            image_dir.mkdir(parents=True, exist_ok=True)
+            
+            print(f"🖼️  Image directory prepared: {image_dir}")
+                    
+        except Exception as e:
+            print(f"⚠️  Warning: Could not prepare image directory: {e}")
+    
+    def extract_multiple(self, pdf_paths: List[Union[str, Path]]) -> Dict[str, Optional[str]]:
         """
         Extract content from multiple PDF files.
         
@@ -91,7 +116,7 @@ class PDFExtractor:
             pdf_paths: List of PDF file paths to extract
             
         Returns:
-            Dictionary mapping file names to extracted data
+            Dictionary mapping file names to extracted markdown content
         """
         results = {}
         

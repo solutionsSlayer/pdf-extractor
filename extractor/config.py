@@ -1,5 +1,5 @@
 """
-Configuration settings for PDF extraction
+Configuration settings for PDF extraction using Docling
 """
 
 from dataclasses import dataclass
@@ -9,14 +9,11 @@ from pathlib import Path
 
 @dataclass
 class ExtractionConfig:
-    """Configuration for PDF extraction parameters"""
+    """Configuration for PDF extraction parameters using Docling"""
     
     # Extraction options
-    page_chunks: bool = True
-    extract_words: bool = True
-    
-    # Table extraction - optimized for markdown
-    table_strategy: str = "lines_strict"
+    extract_tables: bool = True
+    extract_images: bool = True
     
     # Image extraction
     write_images: bool = True
@@ -24,24 +21,25 @@ class ExtractionConfig:
     dpi: int = 200
     image_path: str = "./extracted_images"
     
-    # Layout options
-    margins: Tuple[int, int, int, int] = (5, 5, 5, 5)
+    # Layout and processing options
+    ocr_enabled: bool = True
+    table_structure_recognition: bool = True
     show_progress: bool = True
     
     # Output settings
     output_directory: Optional[str] = "./extracted_data"
-    save_as_markdown: bool = True  # NEW: Save as .md files
-    save_raw_text: bool = False    # CHANGED: Default to False since we prefer markdown
+    save_as_markdown: bool = True  # Save as .md files
+    save_raw_text: bool = False    # Default to False since we prefer markdown
     
-    def to_pymupdf_kwargs(self, pdf_name: Optional[str] = None) -> dict:
+    def to_docling_kwargs(self, pdf_name: Optional[str] = None) -> dict:
         """
-        Convert config to pymupdf4llm keyword arguments.
+        Convert config to Docling DocumentConverter keyword arguments.
         
         Args:
             pdf_name: Name of the PDF file (without extension) to create organized image folders
             
         Returns:
-            Dictionary of pymupdf4llm parameters optimized for markdown output
+            Dictionary of Docling parameters optimized for markdown output
         """
         # Organize images by PDF file name if provided
         image_path = self.image_path
@@ -49,13 +47,13 @@ class ExtractionConfig:
             image_path = str(Path(self.image_path) / pdf_name)
         
         return {
-            "page_chunks": self.page_chunks,
-            "extract_words": self.extract_words,
-            "table_strategy": self.table_strategy,
-            "write_images": self.write_images,
+            "extract_tables": self.extract_tables,
+            "extract_images": self.extract_images,
+            "images_scale": self.dpi / 72.0,  # Convert DPI to scale factor
+            "generate_page_images": self.write_images,
             "image_format": self.image_format,
-            "dpi": self.dpi,
             "image_path": image_path,
-            "margins": self.margins,
+            "ocr_enabled": self.ocr_enabled,
+            "table_structure_recognition": self.table_structure_recognition,
             "show_progress": self.show_progress
         } 

@@ -28,7 +28,7 @@ class FileManager:
     
     def save_extracted_data(
         self, 
-        extracted_data: Union[List[Dict[str, Any]], str], 
+        extracted_data: str, 
         original_file_path: Union[str, Path],
         output_directory: Optional[Union[str, Path]] = None
     ) -> Dict[str, Path]:
@@ -83,7 +83,7 @@ class FileManager:
     
     def _save_as_markdown(
         self, 
-        extracted_data: Union[List[Dict[str, Any]], str], 
+        extracted_data: str, 
         base_name: str, 
         output_dir: Path
     ) -> Path:
@@ -91,30 +91,20 @@ class FileManager:
         markdown_file = output_dir / f"extracted_{base_name}.md"
         
         with open(markdown_file, 'w', encoding='utf-8') as f:
-            if isinstance(extracted_data, list):
-                # Add title and metadata
-                f.write(f"# {base_name}\n\n")
-                f.write(f"*Extracted on {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}*\n\n")
-                f.write("---\n\n")
-                
-                for i, chunk in enumerate(extracted_data):
-                    f.write(f"## Page {i+1}\n\n")
-                    if isinstance(chunk, dict):
-                        text_content = chunk.get("text", str(chunk))
-                        f.write(text_content)
-                    else:
-                        f.write(str(chunk))
-                    f.write("\n\n")
-            else:
-                # Direct markdown content from pymupdf4llm
-                f.write(str(extracted_data))
+            # Add title and metadata
+            f.write(f"# {base_name}\n\n")
+            f.write(f"*Extracted on {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}*\n\n")
+            f.write("---\n\n")
+            
+            # Direct markdown content from Docling
+            f.write(str(extracted_data))
         
         print(f"📄 Markdown saved: {markdown_file}")
         return markdown_file
     
     def _save_as_text(
         self, 
-        extracted_data: Union[List[Dict[str, Any]], str], 
+        extracted_data: str, 
         base_name: str, 
         output_dir: Path
     ) -> Path:
@@ -122,17 +112,9 @@ class FileManager:
         text_file = output_dir / f"extracted_{base_name}.txt"
         
         with open(text_file, 'w', encoding='utf-8') as f:
-            if isinstance(extracted_data, list):
-                for i, chunk in enumerate(extracted_data):
-                    f.write(f"=== CHUNK {i+1} ===\n")
-                    if isinstance(chunk, dict):
-                        text_content = chunk.get("text", str(chunk))
-                        f.write(text_content)
-                    else:
-                        f.write(str(chunk))
-                    f.write("\n\n")
-            else:
-                f.write(str(extracted_data))
+            # Convert markdown to plain text by removing markdown syntax
+            plain_text = self._markdown_to_text(extracted_data)
+            f.write(plain_text)
         
         print(f"💾 Text saved: {text_file}")
         return text_file
@@ -155,7 +137,7 @@ class FileManager:
     
     def _generate_metadata(
         self, 
-        extracted_data: Union[List[Dict[str, Any]], str], 
+        extracted_data: str, 
         original_path: Path
     ) -> Dict[str, Any]:
         """Generate metadata about the extraction."""
@@ -163,30 +145,55 @@ class FileManager:
             "extraction_timestamp": datetime.now().isoformat(),
             "original_file": str(original_path),
             "file_size_bytes": original_path.stat().st_size if original_path.exists() else None,
+            "extractor_used": "Docling",
+            "output_format": "markdown"
         }
         
         # Add data statistics
-        if isinstance(extracted_data, list):
-            metadata.update({
-                "total_chunks": len(extracted_data),
-                "chunks_with_tables": sum(1 for chunk in extracted_data 
-                                        if isinstance(chunk, dict) and chunk.get("tables")),
-                "chunks_with_images": sum(1 for chunk in extracted_data 
-                                        if isinstance(chunk, dict) and chunk.get("images")),
-                "total_text_length": sum(len(chunk.get("text", "")) if isinstance(chunk, dict) 
-                                       else len(str(chunk)) for chunk in extracted_data)
-            })
-        else:
-            metadata.update({
-                "total_chunks": 1,
-                "total_text_length": len(str(extracted_data))
-            })
+        content = str(extracted_data)
+        metadata.update({
+            "total_text_length": len(content),
+            "lines_count": len(content.split('\n')),
+            "tables_detected": content.count('|'),  # Rough estimate based on markdown table syntax
+            "images_detected": content.count('!['),  # Count markdown image references
+        })
         
         return metadata
     
+    def _markdown_to_text(self, markdown_content: str) -> str:
+        """
+        Convert markdown to plain text by removing markdown syntax.
+        
+        Args:
+            markdown_content: Markdown content to convert
+            
+        Returns:
+            Plain text content
+        """
+        import re
+        
+        # Remove markdown headers
+        text = re.sub(r'^#{1,6}\s+', '', markdown_content, flags=re.MULTILINE)
+        
+        # Remove markdown emphasis
+        text = re.sub(r'\*\*(.*?)\*\*', r'\1', text)  # Bold
+        text = re.sub(r'\*(.*?)\*', r'\1', text)      # Italic
+        
+        # Remove markdown links but keep text
+        text = re.sub(r'\[([^\]]+)\]\([^\)]+\)', r'\1', text)
+        
+        # Remove markdown images
+        text = re.sub(r'!\[([^\]]*)\]\([^\)]+\)', r'[Image: \1]', text)
+        
+        # Clean up table formatting
+        text = re.sub(r'\|', ' ', text)
+        text = re.sub(r'-{3,}', '', text)
+        
+        return text
+    
     def save_multiple_extractions(
         self, 
-        extractions: Dict[str, Union[List[Dict[str, Any]], str]], 
+        extractions: Dict[str, str], 
         original_paths: Dict[str, Union[str, Path]],
         output_directory: Optional[Union[str, Path]] = None
     ) -> Dict[str, Dict[str, Path]]:

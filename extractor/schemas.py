@@ -20,6 +20,7 @@ class NutritionalValue(BaseModel):
     """Valeur nutritionnelle"""
     name: str = Field(description="Nom de la valeur nutritionnelle")
     per_100g: Optional[str] = Field(None, description="Valeur pour 100g de produit")
+    percentage_reference: Optional[str] = Field(None, description="Pourcentage de l'apport de référence")
 
 
 class ManufacturerContact(BaseModel):

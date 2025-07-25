@@ -1,9 +1,11 @@
 {
-  "extraction_timestamp": "2025-06-13T15:25:26.311833",
-  "original_file": "C:\\Users\\DorianDOUSSAIN\\Documents\\projects\\tools\\data_warehouse\\FT\\unilever\\3011360006707.pdf",
+  "extraction_timestamp": "2025-06-18T12:20:45.456814",
+  "original_file": "FT\\unilever\\3011360006707.pdf",
   "file_size_bytes": 172603,
-  "total_chunks": 3,
-  "chunks_with_tables": 3,
-  "chunks_with_images": 3,
-  "total_text_length": 5442
+  "extractor_used": "Docling",
+  "output_format": "markdown",
+  "total_text_length": 11378,
+  "lines_count": 131,
+  "tables_detected": 295,
+  "images_detected": 0
 }
